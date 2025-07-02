@@ -1,8 +1,5 @@
 const correctPassword = "Emin.1073.";
 
-let customCommands = JSON.parse(localStorage.getItem("ai_commands")) || [];
-
-// Giriş kontrolü
 function checkPassword() {
   const input = document.getElementById("password").value;
   if (input === correctPassword) {
@@ -13,16 +10,25 @@ function checkPassword() {
   }
 }
 
-// Sesli komut
 function startListening() {
   const resultBox = document.getElementById("result");
   const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   recognition.lang = "tr-TR";
   recognition.start();
 
-  recognition.onresult = function(event) {
+  recognition.onresult = async function(event) {
     const command = event.results[0][0].transcript.toLowerCase();
-    resultBox.innerText = handleCommand(command);
+    if (command.includes("öğren")) {
+      const response = await handleLearnCommand(command);
+      resultBox.innerText = response;
+    } else {
+      const memoryResponse = recallMemory(command);
+      if (memoryResponse !== "Bu konuda daha önce bir şey öğrenmedim.") {
+        resultBox.innerText = memoryResponse;
+      } else {
+        resultBox.innerText = handleBasicCommand(command);
+      }
+    }
   };
 
   recognition.onerror = function(event) {
@@ -30,56 +36,54 @@ function startListening() {
   };
 }
 
-// Komut paneli işlemleri
-function addCommand() {
-  const input = document.getElementById("commandInput").value.trim();
-  if (input === "") return;
-  customCommands.push(input);
-  localStorage.setItem("ai_commands", JSON.stringify(customCommands));
-  document.getElementById("commandInput").value = "";
-  renderCommands();
+async function fetchFromWikipedia(query) {
+  try {
+    const response = await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+    const data = await response.json();
+    return data.extract || "Bilgi bulunamadı.";
+  } catch (error) {
+    return "Bilgi alınamadı.";
+  }
 }
 
-function clearCommands() {
-  customCommands = [];
-  localStorage.removeItem("ai_commands");
-  renderCommands();
+function saveToMemory(topic, content) {
+  const memory = JSON.parse(localStorage.getItem("jarvis_memory")) || {};
+  memory[topic] = content;
+  localStorage.setItem("jarvis_memory", JSON.stringify(memory));
 }
 
-function renderCommands() {
-  const list = document.getElementById("commandList");
-  list.innerHTML = "";
-  customCommands.forEach(cmd => {
-    const li = document.createElement("li");
-    li.textContent = cmd;
-    list.appendChild(li);
-  });
-}
-
-// Komutlara göre yanıt üretme
-function handleCommand(command) {
-  // Yapay zeka gelişme komutları
-  for (let i = 0; i < customCommands.length; i++) {
-    if (command.includes("geliş") || command.includes("öğren")) {
-      return `Tamam Stark, "${customCommands[i]}" konusunda gelişmeye başlıyorum.`;
+function recallMemory(topic) {
+  const memory = JSON.parse(localStorage.getItem("jarvis_memory")) || {};
+  for (let key in memory) {
+    if (topic.includes(key)) {
+      return memory[key];
     }
   }
+  return "Bu konuda daha önce bir şey öğrenmedim.";
+}
 
-  // Sabit komutlar
+async function handleLearnCommand(command) {
+  const keyword = command.replace("öğren", "").trim();
+  const info = await fetchFromWikipedia(keyword);
+  saveToMemory(keyword, info);
+  return `"${keyword}" hakkında öğrendim: ${info}`;
+}
+
+function handleBasicCommand(command) {
+  const now = new Date();
   if (command.includes("selam")) {
     return "Merhaba Stark, seni bekliyordum.";
   } else if (command.includes("saat")) {
-    const now = new Date();
     return "Şu an saat " + now.getHours() + ":" + now.getMinutes();
-  } else if (command.includes("gün") || command.includes("tarih")) {
-    const now = new Date();
-    return "Bugün " + now.toLocaleDateString("tr-TR", {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
+  } else if (command.includes("tarih") || command.includes("gün")) {
+    return "Bugün " + now.toLocaleDateString("tr-TR", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  } else if (command.includes("youtube aç")) {
+    window.open("https://www.youtube.com", "_blank");
+    return "YouTube açıldı.";
+  } else if (command.includes("google aç")) {
+    window.open("https://www.google.com", "_blank");
+    return "Google açıldı.";
   } else {
     return "Bu komutu anlayamadım.";
   }
 }
-
-// Sayfa açılınca komutları listele
-window.onload = renderCommands;
