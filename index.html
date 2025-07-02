@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jarvis WebApp</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Giriş Paneli -->
+  <div id="login">
+    <h1>Giriş Yap</h1>
+    <input type="password" id="password" placeholder="Şifre" />
+    <button onclick="checkPassword()">Giriş</button>
+    <p id="loginStatus"></p>
+  </div>
+
+  <!-- Jarvis Paneli -->
+  <div id="jarvis" style="display: none;">
+    <h1>🎙️ Jarvis'e Hoş Geldin Stark</h1>
+
+    <!-- Komut Paneli -->
+    <div id="commandPanel" style="margin-bottom: 30px;">
+      <h2>🧠 Komut Paneli</h2>
+      <textarea id="commandInput" rows="3" placeholder="Örn: Yazılım konusunda geliş" style="width: 300px;"></textarea><br>
+      <button onclick="addCommand()">Ekle</button>
+      <button onclick="clearCommands()">Temizle</button>
+      <ul id="commandList" style="text-align: left; max-width: 300px; margin: auto;"></ul>
+    </div>
+
+    <!-- Sesli Komut Paneli -->
+    <button onclick="startListening()">🎤 Dinlemeye Başla</button>
+    <p id="result"></p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
